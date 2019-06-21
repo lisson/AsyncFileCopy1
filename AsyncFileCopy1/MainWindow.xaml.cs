@@ -23,6 +23,7 @@ namespace AsyncFileCopy1
         public MainWindow()
         {
             InitializeComponent();
+            DataContext = new FileCopyViewModel1();
         }
     }
 }
