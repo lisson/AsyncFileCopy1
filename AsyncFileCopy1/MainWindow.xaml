@@ -7,9 +7,14 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="350" Width="525">
     <Grid>
-        <Button Content="Button" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Width="75" Command="{Binding Path=CopyCommand}"/>
+        <Button Content="Button" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Width="108" Command="{Binding Path=CopyCommand}"/>
         <Label Content="Status:" HorizontalAlignment="Left" Margin="10,35,0,0" VerticalAlignment="Top" Width="53"/>
         <Label Content="{Binding Path=TManager.Status, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Left" Margin="68,35,0,0" VerticalAlignment="Top"/>
+        <Label Content="{Binding Path=TManager.Total, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Left" Margin="101,69,0,0" VerticalAlignment="Top"/>
+        <Label Content="{Binding Path=TManager.Transferred, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Left" Margin="101,101,0,0" VerticalAlignment="Top"/>
+        <Label Content="Total:" HorizontalAlignment="Left" Margin="10,62,0,0" VerticalAlignment="Top" Width="53"/>
+        <Label Content="Transferred:" HorizontalAlignment="Left" Margin="10,93,0,0" VerticalAlignment="Top" Width="86"/>
+        <ProgressBar HorizontalAlignment="Left" Height="17" Margin="18,124,0,0" VerticalAlignment="Top" Width="491" Maximum="{Binding Path=TManager.Total, UpdateSourceTrigger=PropertyChanged}" Value="{Binding Path=TManager.Transferred, UpdateSourceTrigger=PropertyChanged}"/>
 
     </Grid>
 </Window>

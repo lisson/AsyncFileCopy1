@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Threading;
 using System.Management.Automation;
 using ReactiveUI;
+using System.Runtime.InteropServices;
 
 namespace AsyncFileCopy1
 {
@@ -28,38 +29,93 @@ namespace AsyncFileCopy1
             set { this.RaiseAndSetIfChanged(ref _exitcode, value); }
         }
 
-        private Process _xcopyProcess;
+        private long _total;
+
+        public long Total
+        {
+            get { return _total; }
+            set { this.RaiseAndSetIfChanged(ref _total, value); }
+        }
+
+        private long _transferred;
+
+        public long Transferred
+        {
+            get { return _transferred; }
+            set { this.RaiseAndSetIfChanged(ref _transferred, value); }
+        }
+
+
+
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        static extern bool CopyFileEx(string lpExistingFileName, string lpNewFileName,
+       CopyProgressRoutine lpProgressRoutine, IntPtr lpData, ref Int32 pbCancel,
+       CopyFileFlags dwCopyFlags);
+
+        delegate CopyProgressResult CopyProgressRoutine(
+        long TotalFileSize,
+        long TotalBytesTransferred,
+        long StreamSize,
+        long StreamBytesTransferred,
+        uint dwStreamNumber,
+        CopyProgressCallbackReason dwCallbackReason,
+        IntPtr hSourceFile,
+        IntPtr hDestinationFile,
+        IntPtr lpData);
+
+        int pbCancel;
+
+        enum CopyProgressResult : uint
+        {
+            PROGRESS_CONTINUE = 0,
+            PROGRESS_CANCEL = 1,
+            PROGRESS_STOP = 2,
+            PROGRESS_QUIET = 3
+        }
+
+        enum CopyProgressCallbackReason : uint
+        {
+            CALLBACK_CHUNK_FINISHED = 0x00000000,
+            CALLBACK_STREAM_SWITCH = 0x00000001
+        }
+
+        [Flags]
+        enum CopyFileFlags : uint
+        {
+            COPY_FILE_FAIL_IF_EXISTS = 0x00000001,
+            COPY_FILE_RESTARTABLE = 0x00000002,
+            COPY_FILE_OPEN_SOURCE_FOR_WRITE = 0x00000004,
+            COPY_FILE_ALLOW_DECRYPTED_DESTINATION = 0x00000008
+        }
+
+        private void XCopy(string oldFile, string newFile)
+        {
+            CopyFileEx(oldFile, newFile, new CopyProgressRoutine(this.CopyProgressHandler), IntPtr.Zero, ref pbCancel, CopyFileFlags.COPY_FILE_RESTARTABLE);
+        }
+
+        private CopyProgressResult CopyProgressHandler(long total, long transferred, long streamSize, long StreamByteTrans, uint dwStreamNumber, CopyProgressCallbackReason reason, IntPtr hSourceFile, IntPtr hDestinationFile, IntPtr lpData)
+        {
+            //Debug.WriteLine("Total: " + total);
+            Total = total;
+            //Debug.WriteLine("Transferred: " + transferred);
+            Transferred = transferred;
+            return CopyProgressResult.PROGRESS_CONTINUE;
+        }
 
         public FileCopyContainer()
         {
-            _xcopyProcess = new Process();
-            _xcopyProcess.StartInfo.UseShellExecute = false;
-            _xcopyProcess.StartInfo.CreateNoWindow = true;
-            _xcopyProcess.StartInfo.FileName = string.Format(@"{0}\xcopy.exe", Environment.SystemDirectory);
-            _xcopyProcess.EnableRaisingEvents = true;
-            _xcopyProcess.Exited += new EventHandler(OnExit);
             Status = null;
+            Total = 0;
+            Transferred = 0;
         }
 
         public void Copy(string src, string dest)
         {
-            Console.Out.WriteLine("In Thread: " + Thread.CurrentThread.ManagedThreadId);
-            if (Status == TaskStatus.Running)
-            {
-                return;
-            }
-            Console.Out.WriteLine(String.Format("Copying {0} to {1}", src, dest));
-            _xcopyProcess.StartInfo.Arguments = string.Format(@"/e/Y/i {0} {1}", src, dest);
-            _xcopyProcess.Start();
             Status = TaskStatus.Running;
-            Console.Out.WriteLine("Task Started.");
+            XCopy(src, dest);
+            Status = TaskStatus.RanToCompletion;
         }
 
-        private void OnExit(object sender, System.EventArgs e)
-        {
-            Console.Out.WriteLine("Task Completed.");
-            Status = TaskStatus.RanToCompletion;
-            ExitCode = _xcopyProcess.ExitCode;
-        }
     }
 }

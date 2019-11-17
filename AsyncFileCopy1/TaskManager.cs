@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using ReactiveUI;
 using System.Reactive;
 using System.Threading;
+using System.Diagnostics;
 
 namespace AsyncFileCopy1
 {
@@ -19,8 +20,23 @@ namespace AsyncFileCopy1
             _fp.WhenAnyValue(x => x.Status).Subscribe(s =>
             {
                 this.Status = s;
+                Debug.WriteLine("Status: " + Status);
             });
 
+            _fp.WhenAnyValue(x => x.Total).Subscribe(x =>
+            {
+                this.Total = x;
+                Debug.WriteLine("Total: " + Total);
+            });
+
+            _fp.WhenAnyValue(x => x.Transferred).Subscribe(x =>
+            {
+                this.Transferred = x;
+                Debug.WriteLine("Transferred: " + Transferred);
+            });
+
+            Total = 1;
+            Transferred = 0;
         }
 
         private TaskStatus? _taskstatus;
@@ -31,12 +47,31 @@ namespace AsyncFileCopy1
             set { this.RaiseAndSetIfChanged(ref _taskstatus, value); }
         }
 
-        public void CopyTask()
+        private long _total;
+
+        public long Total
+        {
+            get { return _total; }
+            set { this.RaiseAndSetIfChanged(ref _total, value); }
+        }
+
+        private long _transferred;
+
+        public long Transferred
+        {
+            get { return _transferred; }
+            set { this.RaiseAndSetIfChanged(ref _transferred, value); }
+        }
+
+        public async Task<bool> CopyTask()
         {
             Console.Out.WriteLine("In Thread: " + Thread.CurrentThread.ManagedThreadId);
-            string src = @"C:\";
-            string dest = @"D:\";
-            _fp.Copy(src, dest);
+            string src = @"G:\OpenMapChest_Canada_2018.01.24.zip";
+            string dest = @"G:\temp1";
+            await Task.Run(() =>
+                _fp.Copy(src, dest)
+            );
+            return true;
         }
     }
 }

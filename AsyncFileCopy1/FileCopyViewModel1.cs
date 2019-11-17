@@ -12,7 +12,7 @@ namespace AsyncFileCopy1
     class FileCopyViewModel1 : ReactiveObject
     {
         private TaskManager _tmanager;
-        public ReactiveCommand<Unit, Unit> CopyCommand { get; set; }
+        public ReactiveCommand<Unit, bool> CopyCommand { get; set; }
 
         public TaskManager TManager
         {
@@ -22,10 +22,7 @@ namespace AsyncFileCopy1
         public FileCopyViewModel1()
         {
             _tmanager = new TaskManager();
-            CopyCommand = ReactiveCommand.Create(() => {
-                Console.Out.WriteLine("In Thread: " + Thread.CurrentThread.ManagedThreadId);
-                _tmanager.CopyTask();
-                });
+            CopyCommand = ReactiveCommand.CreateFromTask(_tmanager.CopyTask);
         }
     }
 }
